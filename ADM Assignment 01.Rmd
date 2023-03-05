@@ -1,0 +1,148 @@
+---
+title: "ADm Assignment 01"
+author: "Sai Supriya"
+date: "2023-03-03"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+
+
+***PART-A***
+
+@QA1. What is the main purpose of regularization when training predictive models?
+
+Ans.  In general, regularization involves making something conform to a standard or making it regular. This concept is also applied in machine learning where we use regularization to reduce the coefficients towards zero, thus inhibiting overfitting by preventing the learning of an overly complex or flexible model.
+
+@QA2. What is the role of a loss function in a predictive model? And name two common loss functions for regression models and two common loss functions for classification models.
+
+Ans. A loss function measures the degree of fit between a model and the data it is supposed to predict. The goal of the model is to minimize the value of the loss function. In regression models, Mean Absolute Error (MAE) and Mean Squared Error (MSE) are two common loss functions, while Log Loss and Hinge Loss are commonly used in classification models.
+
+@QA3. Consider  the  following  scenario.  You  are  building  a  classification  model  with  many hyper  parameters  on  a  relatively  small  dataset.  You  will  see  that  the  training  error  is 
+extremely small. Can you fully trust this model? Discuss the reason.
+
+Ans. Due to the large number of hyperparameters relative to the size of the dataset, it is not entirely reliable to trust the model mentioned above. Consequently, even if the training error is minimal, it is not guaranteed to perform optimally when applied to test data.
+
+@QA4. What is the role of the lambda parameter in regularized linear models such as Lasso or Ridge regression models?
+
+Ans. It is used to determine the penalty level that the model should apply during the regularization process. Essentially, regularization is a technique that prevents overfitting in linear models by introducing a penalty term to the loss function. This penalty term shrinks the model's coefficients towards zero, thus discouraging complex models that may fit the training data too closely but perform poorly on unseen data. The lambda hyperparameter controls the strength of the penalty term, and increasing it results in more significant shrinkage of the coefficients, thereby reducing model complexity. Conversely, decreasing lambda leads to less shrinkage, allowing the model to fit the training data more closely. 
+
+***PART-B***
+
+```{r}
+library(ISLR)
+library(dplyr)
+library(glmnet)
+library(caret)
+```
+
+
+```{r}
+# Load required libraries
+library(ISLR)
+library(dplyr)
+library(glmnet)
+library(caret)
+```
+
+```{r}
+# Select relevant variables
+cars_data <- Carseats %>% select("Sales", "Price", "Advertising", "Population", "Age", "Income", "Education")
+```
+
+```{r}
+# Normalize the data
+cars_norm <- scale(cars_data)
+```
+
+```{r}
+# Split the data into X and Y
+X <- as.matrix(cars_norm[, c('Price','Advertising','Population','Age','Income','Education')])
+Y <- cars_norm[,'Sales']
+```
+```{r}
+# Fit a Lasso regression model
+lasso_fit <- glmnet(X, Y, alpha = 1)
+plot(lasso_fit, xvar = "lambda")
+plot(cv.glmnet(X, Y, alpha = 1))
+
+```
+## QB1. Build a Lasso regression model to predict Sales based on all other attributes ("Price", "Advertising", "Population", "Age", "Income" and "Education").  What is the best value of lambda for such a lasso model? 
+
+
+```{r}
+# Fit Lasso model using cross-validation
+cv_lasso_fit <- cv.glmnet(X, Y, alpha = 1)
+plot(cv_lasso_fit)
+best_lambda <- cv_lasso_fit$best_lambda.min
+best_lambda
+
+```
+ By analyzing the plot, one can determine the optimal value of lambda that achieves the desired trade-off between complexity and accuracy.
+
+In contrast, it has been determined that the value of lambda that produces the best results for our lasso model is 0.0015. This value was selected based on a thorough evaluation of the model's performance on the dataset, taking into account the degree of complexity and the level of accuracy achieved.
+
+## QB2. What is the coefficient for the price (normalized) attribute in the best model (i.e. model with the optimal lambda)? 
+
+```{r}
+# Extract coefficients from Lasso model with optimal lambda
+lasso_coef <- coef(lasso_fit, s = best_lambda)
+lasso_coef
+
+```
+
+The best model has a coefficient of -0.479 for the "Price" variable (after normalization).
+
+## QB3. How many attributes remain in the model if lambda is set to 0.01? How that number changes if lambda is increased to 0.1? Do you expect more variables to stay in the model (i.e., to have non-zero coefficients) as we increase lambda? 
+
+```{r}
+# Extract coefficients from Lasso model with lambda = 0.01
+lasso_coef_01 <- coef(lasso_fit, s = 0.01)
+lasso_coef_01
+
+```
+When lambda is set to 0.01, all the variables are retained in the model. In other words, the regularization process does not eliminate any of the variables from the model.
+```{r}
+# Extract coefficients from Lasso model with lambda = 0.1
+lasso_coef_1 <- coef(lasso_fit, s = 0.1)
+lasso_coef_1
+
+```
+If the value of lambda is increased to 0.1, the "Population" and "Education" variables will be eliminated from the model as they will have zero coefficients.
+
+When the value of lambda is decreased, we anticipate that more variables will have non-zero coefficients. This is because as the penalty term decreases, the model becomes more flexible and can fit the training data more closely. As a result, more variables may be needed to account for the increased complexity of the model.
+
+
+## QB4. Build an elastic-net model with alpha set to 0.6. What is the best value of lambda for such a model? 
+
+```{r}
+# Fit elastic-net model with alpha = 0.6
+fitted_elastic <- glmnet(X, Y, alpha = 0.6)
+plot(fitted_elastic, xvar = "lambda")
+plot(cv.glmnet(X, Y, alpha = 0.6))
+
+# Extract coefficients from Lasso model with optimal lambda
+cv_fitted_elastic <- cv.glmnet(X, Y, alpha = 0.6)
+plot(cv_fitted_elastic)
+lambda_elastic <- cv_fitted_elastic$lambda.min
+lambda_elastic
+
+
+```
+The best value of  Lambda for an elastic model with alpha set to 0.6 is 0.0023.
